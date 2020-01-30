@@ -5,6 +5,7 @@ from ucb import main, trace, interact
 
 GOAL_SCORE = 100  # The goal of Hog is to score 100 points.
 
+
 ######################
 # Phase 1: Simulator #
 ######################
@@ -22,6 +23,16 @@ def roll_dice(num_rolls, dice=six_sided):
     assert num_rolls > 0, 'Must roll at least once.'
     # BEGIN PROBLEM 1
     "*** YOUR CODE HERE ***"
+
+    total = 0
+    pig_out = 0
+    while num_rolls > 0:
+        dice_value = dice()
+        if dice_value == 1: pig_out = 1
+        total = total + dice_value
+        num_rolls -= 1
+    return 1 if pig_out == 1 else total
+
     # END PROBLEM 1
 
 
@@ -33,6 +44,23 @@ def free_bacon(score):
     assert score < 100, 'The game should be over.'
     # BEGIN PROBLEM 2
     "*** YOUR CODE HERE ***"
+
+    cube = score ** 3
+    total = 0
+    if len(str(cube)) == 1:
+        return 1 + cube
+    else:
+        index = 1
+        for i in str(cube):
+            if index % 2 == 0:
+                # perform subtraction
+                total = total - int(i)
+            else:
+                # perform addition
+                total = total + int(i)
+            index += 1
+        return 1 + abs(total)
+
     # END PROBLEM 2
 
 
@@ -51,6 +79,12 @@ def take_turn(num_rolls, opponent_score, dice=six_sided):
     assert opponent_score < 100, 'The game should be over.'
     # BEGIN PROBLEM 3
     "*** YOUR CODE HERE ***"
+
+    if num_rolls == 0:
+        return free_bacon(opponent_score)
+    else:
+        return roll_dice(num_rolls, dice)
+
     # END PROBLEM 3
 
 
@@ -60,6 +94,11 @@ def is_swap(player_score, opponent_score):
     """
     # BEGIN PROBLEM 4
     "*** YOUR CODE HERE ***"
+
+    sum_of_scores = player_score + opponent_score
+    total = 3 ** sum_of_scores
+    return True if str(total)[0] == str(total)[-1] else False
+
     # END PROBLEM 4
 
 
@@ -98,13 +137,41 @@ def play(strategy0, strategy1, score0=0, score1=0, dice=six_sided,
     feral_hogs: A boolean indicating whether the feral hogs rule should be active.
     """
     who = 0  # Who is about to take a turn, 0 (first) or 1 (second)
-    # BEGIN PROBLEM 5
+
     "*** YOUR CODE HERE ***"
-    # END PROBLEM 5
-    # (note that the indentation for the problem 6 prompt (***YOUR CODE HERE***) might be misleading)
-    # BEGIN PROBLEM 6
-    "*** YOUR CODE HERE ***"
-    # END PROBLEM 6
+    previous_score0 = score0
+    previous_score01 = score1
+    # BEGIN PROBLEM 5,6
+    while score0 <= goal and score1 <= goal:
+        if who == 0:
+            score, opponent_score, strategy, previous_score = score0, score1, strategy0, previous_score0
+        elif who == 1:
+            score, opponent_score, strategy, previous_score = score1, score0, strategy1, previous_score01
+
+        num_rolls = strategy(score, opponent_score)
+        add_score = take_turn(num_rolls, opponent_score, dice)
+        if num_rolls == 0:
+            previous_score = score
+            score += add_score
+        else:
+            score += add_score
+            previous_score = score
+
+        if is_swap(score, opponent_score):
+            score, opponent_score = opponent_score, score
+
+        if feral_hogs:
+            if abs(previous_score - num_rolls) == 2:
+                score += 3
+
+        if who == 0:
+            score0, score1, strategy0, previous_score0 = score, opponent_score, strategy, previous_score
+        elif who == 1:
+            score1, score0, strategy1, previous_score1 = score, opponent_score, strategy, previous_score
+        say = say(score0, score1)
+        who = other(who)
+
+    # END PROBLEM 5,6
     return score0, score1
 
 
@@ -117,6 +184,7 @@ def say_scores(score0, score1):
     """A commentary function that announces the score for each player."""
     print("Player 0 now has", score0, "and Player 1 now has", score1)
     return say_scores
+
 
 def announce_lead_changes(prev_leader=None):
     """Return a commentary function that announces lead changes.
@@ -131,6 +199,7 @@ def announce_lead_changes(prev_leader=None):
     >>> f5 = f4(15, 13)
     Player 0 takes the lead by 2
     """
+
     def say(score0, score1):
         if score0 > score1:
             leader = 0
@@ -141,7 +210,9 @@ def announce_lead_changes(prev_leader=None):
         if leader != None and leader != prev_leader:
             print('Player', leader, 'takes the lead by', abs(score0 - score1))
         return announce_lead_changes(leader)
+
     return say
+
 
 def both(f, g):
     """Return a commentary function that says what f says, then what g says.
@@ -159,8 +230,10 @@ def both(f, g):
     Player 0 now has 6 and Player 1 now has 17
     Player 1 takes the lead by 11
     """
+
     def say(score0, score1):
         return both(f(score0, score1), g(score0, score1))
+
     return say
 
 
@@ -190,6 +263,23 @@ def announce_highest(who, prev_high=0, prev_score=0):
     assert who == 0 or who == 1, 'The who argument should indicate a player.'
     # BEGIN PROBLEM 7
     "*** YOUR CODE HERE ***"
+
+    def say(score0, score1):
+        if who == 0:
+            if score0 - prev_score > prev_high:
+                print(score0 - prev_score, " point(s)! That's the biggest gain yet for Player 0")
+                return announce_highest(who, score0 - prev_score, score0)
+            else:
+                return announce_highest(who, prev_high, score0)
+        else:
+            if score1 - prev_score > prev_high:
+                print(score1 - prev_score, " point(s)! That's the biggest gain yet for Player 1")
+                return announce_highest(who, score1 - prev_score, score1)
+            else:
+                return announce_highest(who, prev_high, score1)
+
+    return say
+
     # END PROBLEM 7
 
 
@@ -211,8 +301,10 @@ def always_roll(n):
     >>> strategy(99, 99)
     5
     """
+
     def strategy(score, opponent_score):
         return n
+
     return strategy
 
 
@@ -286,7 +378,6 @@ def run_experiments():
     "*** You may add additional experiments as you wish ***"
 
 
-
 def bacon_strategy(score, opponent_score, margin=8, num_rolls=6):
     """This strategy rolls 0 dice if that gives at least MARGIN points, and
     rolls NUM_ROLLS otherwise.
@@ -314,6 +405,7 @@ def final_strategy(score, opponent_score):
     # BEGIN PROBLEM 12
     return 6  # Replace this statement
     # END PROBLEM 12
+
 
 ##########################
 # Command Line Interface #
