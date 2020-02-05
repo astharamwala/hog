@@ -137,32 +137,28 @@ def play(strategy0, strategy1, score0=0, score1=0, dice=six_sided,
     feral_hogs: A boolean indicating whether the feral hogs rule should be active.
     """
     who = 0  # Who is about to take a turn, 0 (first) or 1 (second)
-
-    "*** YOUR CODE HERE ***"
-    previous_score0 = score0
-    previous_score01 = score1
+    previous_score0 = 0
+    previous_score1 = 0
     # BEGIN PROBLEM 5,6
-    while score0 <= goal and score1 <= goal:
+    while score0 < goal and score1 < goal:
         if who == 0:
             score, opponent_score, strategy, previous_score = score0, score1, strategy0, previous_score0
         elif who == 1:
-            score, opponent_score, strategy, previous_score = score1, score0, strategy1, previous_score01
+            score, opponent_score, strategy, previous_score = score1, score0, strategy1, previous_score1
 
         num_rolls = strategy(score, opponent_score)
         add_score = take_turn(num_rolls, opponent_score, dice)
-        if num_rolls == 0:
-            previous_score = score
-            score += add_score
-        else:
-            score += add_score
-            previous_score = score
 
-        if is_swap(score, opponent_score):
-            score, opponent_score = opponent_score, score
+        score += add_score
 
         if feral_hogs:
             if abs(previous_score - num_rolls) == 2:
                 score += 3
+
+        if is_swap(score, opponent_score):
+            score, opponent_score = opponent_score, score
+
+        previous_score = add_score
 
         if who == 0:
             score0, score1, strategy0, previous_score0 = score, opponent_score, strategy, previous_score
@@ -266,17 +262,15 @@ def announce_highest(who, prev_high=0, prev_score=0):
 
     def say(score0, score1):
         if who == 0:
-            if score0 - prev_score > prev_high:
-                print(score0 - prev_score, " point(s)! That's the biggest gain yet for Player 0")
+            if (score0 - prev_score) > prev_high:
+                print(score0 - prev_score, "point(s)! That's the biggest gain yet for Player 0")
                 return announce_highest(who, score0 - prev_score, score0)
-            else:
-                return announce_highest(who, prev_high, score0)
+            return announce_highest(who, prev_high, score0)
         else:
-            if score1 - prev_score > prev_high:
-                print(score1 - prev_score, " point(s)! That's the biggest gain yet for Player 1")
+            if (score1 - prev_score) > prev_high:
+                print(score1 - prev_score, "point(s)! That's the biggest gain yet for Player 1")
                 return announce_highest(who, score1 - prev_score, score1)
-            else:
-                return announce_highest(who, prev_high, score1)
+            return announce_highest(who, prev_high, score1)
 
     return say
 
@@ -321,6 +315,16 @@ def make_averaged(g, num_samples=1000):
     """
     # BEGIN PROBLEM 8
     "*** YOUR CODE HERE ***"
+
+    def averaged(*args):
+        x = sum = 0
+        while x < num_samples:
+            sum += g(*args)
+            x += 1
+        return sum / num_samples
+
+    return averaged
+
     # END PROBLEM 8
 
 
@@ -335,6 +339,18 @@ def max_scoring_num_rolls(dice=six_sided, num_samples=1000):
     """
     # BEGIN PROBLEM 9
     "*** YOUR CODE HERE ***"
+    max_val = 0
+    max_flag = 0
+    a = 1
+    while 10 >= a:
+        avg_roll_dice = make_averaged(roll_dice, num_samples)
+        avg = avg_roll_dice(a, dice)
+        if max_val < avg:
+            max_val = avg
+            max_flag = a
+        a += 1
+    return max_flag
+
     # END PROBLEM 9
 
 
@@ -363,16 +379,16 @@ def run_experiments():
         six_sided_max = max_scoring_num_rolls(six_sided)
         print('Max scoring num rolls for six-sided dice:', six_sided_max)
 
-    if False:  # Change to True to test always_roll(8)
+    if True:  # Change to True to test always_roll(8)
         print('always_roll(8) win rate:', average_win_rate(always_roll(8)))
 
-    if False:  # Change to True to test bacon_strategy
+    if True:  # Change to True to test bacon_strategy
         print('bacon_strategy win rate:', average_win_rate(bacon_strategy))
 
-    if False:  # Change to True to test swap_strategy
+    if True:  # Change to True to test swap_strategy
         print('swap_strategy win rate:', average_win_rate(swap_strategy))
 
-    if False:  # Change to True to test final_strategy
+    if True:  # Change to True to test final_strategy
         print('final_strategy win rate:', average_win_rate(final_strategy))
 
     "*** You may add additional experiments as you wish ***"
@@ -383,7 +399,9 @@ def bacon_strategy(score, opponent_score, margin=8, num_rolls=6):
     rolls NUM_ROLLS otherwise.
     """
     # BEGIN PROBLEM 10
-    return 6  # Replace this statement
+    if free_bacon(opponent_score) >= margin:
+        return 0
+    return num_rolls
     # END PROBLEM 10
 
 
@@ -393,17 +411,24 @@ def swap_strategy(score, opponent_score, margin=8, num_rolls=6):
     non-beneficial swap. Otherwise, it rolls NUM_ROLLS.
     """
     # BEGIN PROBLEM 11
-    return 6  # Replace this statement
-    # END PROBLEM 11
+    score_new = score + free_bacon(opponent_score)
+    if is_swap(score_new, opponent_score) and score_new < opponent_score:
+        return 0
+    elif is_swap(score_new, opponent_score) and score_new > opponent_score:
+        return num_rolls
+    return bacon_strategy(score, opponent_score, margin, num_rolls)
+
+
+# END PROBLEM 11
 
 
 def final_strategy(score, opponent_score):
     """Write a brief description of your final strategy.
-
+    Calling swap strategy as final strategy
     *** YOUR DESCRIPTION HERE ***
     """
     # BEGIN PROBLEM 12
-    return 6  # Replace this statement
+    return swap_strategy(score, opponent_score)
     # END PROBLEM 12
 
 

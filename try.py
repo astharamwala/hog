@@ -110,7 +110,7 @@ def silence(score0, score1):
 def play(strategy0, strategy1, score0=0, score1=0, dice=six_sided,
          goal=GOAL_SCORE, say=silence, feral_hogs=True):
     """Simulate a game and return the final scores of both players, with Player
-    0's score first, and Player 1's score second.
+    0's score first, and Player (2, 0)1's score second.
 
     A strategy is a function that takes two total scores as arguments (the
     current player's score, and the opponent's score), and returns a number of
@@ -125,40 +125,40 @@ def play(strategy0, strategy1, score0=0, score1=0, dice=six_sided,
     say:        The commentary function to call at the end of the first turn.
     feral_hogs: A boolean indicating whether the feral hogs rule should be active.
     """
-    who = 0  # Who is about to take a turn, 0 (first) or 1 (second)
+    who = 1  # Who is about to take a turn, 0 (first) or 1 (second)
     previous_score0 = score0
     previous_score01 = score1
-    # BEGIN PROBLEM 5
-    while score0 <= goal and score1 <= goal:
-        if who == 0:
-            score, opponent_score, strategy, previous_score = score0, score1, strategy0, previous_score0
-        elif who == 1:
-            score, opponent_score, strategy, previous_score = score1, score0, strategy1, previous_score01
+    # BEGIN PROBLEM 5,6
+    # while score0 <= goal and score1 <= goal:
+    if who == 0:
+        score, opponent_score, strategy, previous_score = score0, score1, strategy0, previous_score0
+    elif who == 1:
+        score, opponent_score, strategy, previous_score = score1, score0, strategy1, previous_score01
 
-        num_rolls = strategy(score, opponent_score)
-        add_score = take_turn(num_rolls, opponent_score, dice)
-        if num_rolls == 0:
+    num_rolls = 0 # strategy(score, opponent_score)
+    add_score = take_turn(num_rolls, opponent_score, dice)
+
+    score += add_score
+    # previous_score = score  # Maintaining previous score of player
+
+    if is_swap(score, opponent_score):
+        previous_score = score
+        score, opponent_score = opponent_score, score
+
+    if feral_hogs:
+        if abs(previous_score - num_rolls) == 2:
             previous_score = score
-            score += add_score
-        else:
-            score += add_score
-            previous_score = score
+            score += 3
 
-        if is_swap(score, opponent_score):
-            score, opponent_score = opponent_score, score
+    if who == 0:
+        score0, score1, strategy0, previous_score0 = score, opponent_score, strategy, previous_score
+    elif who == 1:
+        score1, score0, strategy1, previous_score1 = score, opponent_score, strategy, previous_score
+    # say = say(score0, score1)
+    # who = other(who)
 
-        if feral_hogs:
-            if abs(previous_score - num_rolls) == 2:
-                score += 3
-
-        if who == 0:
-            score0, score1, strategy0, previous_score0 = score, opponent_score, strategy, previous_score
-        elif who == 1:
-            score1, score0, strategy1, previous_score1 = score, opponent_score, strategy, previous_score
-        say = say(score0, score1)
-        who = other(who)
-    # END PROBLEM 5
+    # END PROBLEM 5,6
     return score0, score1
 
 
-play(lambda x: print(x), lambda x: print(x), 0, 0, 6, 100, silence, False)
+print(play(lambda x: print(x), lambda x: print(x), 0, 1, 6, 100, silence, True))
